@@ -3,7 +3,7 @@
   const GOD_MODE = false; // set true to test levels without dying
 
   // ── Ko-fi donation URL — swap this when your account is set up ──
-  const KOFI_URL = "https://ko-fi.com/YOURKOFINAME";
+  const KOFI_URL = "https://ko-fi.com/findepstein";
 
   // ── DOM refs ────────────────────────────────────────────────
   const canvas       = document.getElementById("game");
