@@ -137,7 +137,8 @@
     <div class="eo-card">
       <div class="eo-badge">🏆</div>
       <h2 class="eo-title">Investigation Complete!</h2>
-      <p class="eo-subtitle">The truth is out there.</p>
+      <p class="eo-rank-badge" id="victoryRank">Investigator</p>
+      <p class="eo-evidence-stat" id="victoryEvidence">0 pieces of evidence uncovered</p>
       <div class="eo-scores">
         <div class="eo-score-item"><span class="eo-score-label">SCORE</span><strong class="eo-score-val" id="victoryScore">0</strong></div>
         <div class="eo-score-sep"></div>
@@ -163,7 +164,21 @@
   <div class="eo-overlay hidden" id="lbOverlay">
     <div class="eo-card eo-card-lb">
       <h2 class="eo-title">🏆 Top Investigators</h2>
+      <p class="eo-rank-badge" id="lbRankBadge"></p>
+      <p class="eo-evidence-stat" id="lbEvidenceStat"></p>
       <table class="lb-table" id="lbTable" aria-label="Leaderboard"></table>
+
+      <!-- Share your result -->
+      <div class="lb-share">
+        <p class="lb-share-label">🔗 Share your result</p>
+        <div class="lb-share-caption" id="shareCaption"></div>
+        <div class="lb-share-btns">
+          <a class="btn share-btn share-x" id="shareX" target="_blank" rel="noopener">𝕏 Post on X</a>
+          <a class="btn share-btn share-wa" id="shareWa" target="_blank" rel="noopener">💬 WhatsApp</a>
+          <button class="btn share-btn share-copy" id="shareCopy" type="button">📋 Copy</button>
+        </div>
+      </div>
+
       <div class="eo-btns eo-btns-lb">
         <button class="btn primary" id="lbRestartBtn" type="button">▶ Play Again</button>
         <a class="btn eo-kofi" href="https://ko-fi.com/findepstein" target="_blank" rel="noopener noreferrer">

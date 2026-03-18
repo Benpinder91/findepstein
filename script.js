@@ -184,6 +184,9 @@
   let combo = 1, comboTimer = 0;
   const COMBO_TIMEOUT = 3.0, MAX_COMBO = 8;
 
+  // ── Evidence tracking (persists across levels) ───────────────
+  let totalEvidenceFound = 0;
+
   // ── Massage Room state ────────────────────────────────────────
   let massageSteps  = 0;     // steps in current group of 4
   let massageGroups = 0;     // completed groups (each adds 1s to pause)
@@ -988,12 +991,33 @@
   const lbTable          = document.getElementById("lbTable");
   const lbRestartBtn     = document.getElementById("lbRestartBtn");
 
+  // ── Rank / percentile based on final score ───────────────────
+  function getPlayerRank(pts) {
+    if (pts >= 18000) return { pct: 1,  label: "Top 1% Investigator 🔥" };
+    if (pts >= 12000) return { pct: 2,  label: "Top 2% Investigator"    };
+    if (pts >= 8000)  return { pct: 5,  label: "Top 5% Investigator"    };
+    if (pts >= 5500)  return { pct: 10, label: "Top 10% Investigator"   };
+    if (pts >= 3500)  return { pct: 20, label: "Top 20% Investigator"   };
+    if (pts >= 2000)  return { pct: 50, label: "Top 50% Investigator"   };
+    return { pct: 100, label: "Investigator" };
+  }
+
+  function buildShareCaption(tag, pts, evidence, rankLabel) {
+    return `🕵️ I just cracked the Epstein network.\n\nTag: ${tag} | Score: ${pts.toLocaleString()} | Evidence: ${evidence} pieces\nRank: ${rankLabel}\n\nCan YOU uncover the truth? 👀\nfindepstein.com`;
+  }
+
   function showVictoryOverlay() {
     victoryScoreEl.textContent = score.toLocaleString();
     victoryHsEl.textContent    = getHS().toLocaleString();
-    victoryTagInput.value      = "";
+    // Rank badge on victory screen
+    const rank = getPlayerRank(score);
+    const rankEl = document.getElementById("victoryRank");
+    if (rankEl) rankEl.textContent = rank.label;
+    // Evidence stat
+    const evEl = document.getElementById("victoryEvidence");
+    if (evEl) evEl.textContent = `${totalEvidenceFound} pieces of evidence uncovered`;
+    victoryTagInput.value = "";
     victoryOverlay.classList.remove("hidden");
-    // Force uppercase as the user types
     victoryTagInput.addEventListener("input", () => {
       const pos = victoryTagInput.selectionStart;
       victoryTagInput.value = victoryTagInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -1015,6 +1039,21 @@
           <td class="lb-date">${e.date || ""}</td>
         </tr>`).join("");
     }
+    // Build and populate share section
+    const tag      = (victoryTagInput.value.trim() || "AAA").toUpperCase();
+    const rank     = getPlayerRank(score);
+    const caption  = buildShareCaption(tag, score, totalEvidenceFound, rank.label);
+    const encoded  = encodeURIComponent(caption);
+    const rankBadge = document.getElementById("lbRankBadge");
+    const evidenceStat = document.getElementById("lbEvidenceStat");
+    const shareCapEl   = document.getElementById("shareCaption");
+    const shareXBtn    = document.getElementById("shareX");
+    const shareWaBtn   = document.getElementById("shareWa");
+    if (rankBadge)    rankBadge.textContent   = rank.label;
+    if (evidenceStat) evidenceStat.textContent = `${totalEvidenceFound} pieces of evidence uncovered`;
+    if (shareCapEl)   shareCapEl.textContent   = caption;
+    if (shareXBtn)    shareXBtn.href = `https://twitter.com/intent/tweet?text=${encoded}`;
+    if (shareWaBtn)   shareWaBtn.href = `https://wa.me/?text=${encoded}`;
     lbOverlay.classList.remove("hidden");
   }
 
@@ -1025,10 +1064,31 @@
     showLeaderboardOverlay(leaderboardData);
   });
 
-  // Also submit on Enter key in the tag input
   victoryTagInput.addEventListener("keydown", e => {
     if (e.key === "Enter") victorySubmitBtn.click();
   });
+
+  // Copy share caption
+  const shareCopyBtn = document.getElementById("shareCopy");
+  if (shareCopyBtn) {
+    shareCopyBtn.addEventListener("click", () => {
+      const cap = document.getElementById("shareCaption");
+      if (!cap) return;
+      navigator.clipboard.writeText(cap.textContent).then(() => {
+        shareCopyBtn.textContent = "✅ Copied!";
+        setTimeout(() => { shareCopyBtn.textContent = "📋 Copy"; }, 2200);
+      }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement("textarea");
+        ta.value = cap.textContent;
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        shareCopyBtn.textContent = "✅ Copied!";
+        setTimeout(() => { shareCopyBtn.textContent = "📋 Copy"; }, 2200);
+      });
+    });
+  }
 
   lbRestartBtn.addEventListener("click", () => {
     lbOverlay.classList.add("hidden");
@@ -1042,12 +1102,14 @@
     const wc = tileCenter(player.tx, player.ty);
     if (dots.has(k)) {
       dots.delete(k);
+      totalEvidenceFound++;
       addScore(10 * combo);
       addCombo();
       spawnParticles(wc.x, wc.y, "#e2e8f0", 6, 38);
     }
     if (powers.has(k)) {
       powers.delete(k);
+      totalEvidenceFound++;
       frightenedTimer = FRIGHTENED_DURATION;
       addScore(50);
       spawnParticles(wc.x, wc.y, "#f59e0b", 14, 75);
@@ -1181,6 +1243,7 @@
   }
   function restartGame() {
     leaderboardActive = false;
+    totalEvidenceFound = 0;
     // Hide both end-game overlays if visible
     victoryOverlay.classList.add("hidden");
     lbOverlay.classList.add("hidden");
