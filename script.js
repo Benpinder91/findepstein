@@ -183,6 +183,12 @@
   // ── Combo system ─────────────────────────────────────────────
   let combo = 1, comboTimer = 0;
   const COMBO_TIMEOUT = 3.0, MAX_COMBO = 8;
+
+  // ── Massage Room state ────────────────────────────────────────
+  let massageSteps  = 0;     // steps in current group of 4
+  let massageGroups = 0;     // completed groups (each adds 1s to pause)
+  let massageTimer  = 0;     // countdown for current pause
+  let massagePaused = false; // is movement currently locked?
   function addCombo() {
     combo = Math.min(combo + 1, MAX_COMBO);
     comboTimer = COMBO_TIMEOUT;
@@ -274,23 +280,40 @@
   }
 
   function drawPizzaHUD() {
+    if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom) return; // hide in massage room
     const VH = canvas.clientHeight;
-    const x0 = 12, y0 = VH - 52;
-    const r = 11, span = Math.PI * 0.62;
+    const x0 = 10, y0 = VH - 60;
+    const r = 13, span = Math.PI * 0.62;
+
+    // Background pill
+    ctx.fillStyle = "rgba(0,0,0,0.62)";
+    roundRect(ctx, x0 - 4, y0 - 4, 96, 38, 8); ctx.fill();
+    ctx.strokeStyle = "rgba(249,115,22,0.45)"; ctx.lineWidth = 1;
+    roundRect(ctx, x0 - 4, y0 - 4, 96, 38, 8); ctx.stroke();
+
+    // Pizza slice
     ctx.save();
-    ctx.translate(x0 + r + 2, y0 + r + 2);
+    ctx.translate(x0 + r + 2, y0 + r - 1);
     ctx.fillStyle = "#b45309";
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r,-span/2,span/2); ctx.closePath(); ctx.fill();
     ctx.fillStyle = "#dc2626";
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r*0.84,-span/2,span/2); ctx.closePath(); ctx.fill();
     ctx.fillStyle = "#fde047";
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r*0.70,-span/2+0.08,span/2-0.08); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#991b1b";
+    [[r*0.44,0],[r*0.50,r*0.20],[r*0.50,-r*0.20]].forEach(([px,py]) => {
+      ctx.beginPath(); ctx.arc(px,py,r*0.10,0,Math.PI*2); ctx.fill();
+    });
     ctx.restore();
-    ctx.globalAlpha = 0.90;
+
+    ctx.globalAlpha = 0.94;
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 10px monospace";
-    ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillText("SPACE", x0 + r*2 + 6, y0 + 2);
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("SPACE", x0 + r*2 + 8, y0 + r - 4);
+    ctx.fillStyle = "rgba(249,115,22,0.80)";
+    ctx.font = "9px sans-serif";
+    ctx.fillText("throw pizza", x0 + r*2 + 8, y0 + r + 7);
     ctx.globalAlpha = 1;
   }
 
@@ -380,88 +403,132 @@
 
   // ── Levels ───────────────────────────────────────────────────
   const LEVELS = [
-    { id:1, name:"Level 1 — The Private Jet",       enemies:["fixer"],                                                            timeLimit:45,  map: buildPlaneCabinMap() },
-    { id:2, name:"Level 2 — The Dock / Harbour",    enemies:["fixer","ex_pres"],                                                   timeLimit:60,
+    // ─── Level 1 — Private Jet (procedural, keep as-is) ───────────
+    { id:1, name:"Level 1 — The Private Jet",
+      enemies:["fixer"],
+      timeLimit:45,
+      map: buildPlaneCabinMap() },
+
+    // ─── Level 2 — Dock / Harbour ─────────────────────────────────
+    { id:2, name:"Level 2 — The Dock / Harbour",
+      enemies:["fixer","ex_pres"],
+      timeLimit:60,
       map:[
         "#################################",
-        "#S...............#.............X#",
-        "#################.#.#############",
-        "#.....#.....#...#.#.#...#.....#.#",
-        "#.....#.....#...#.#.#...#.....#.#",
-        "#.....#.....#...#.#.#...#.....#.#",
-        "#####.#.#####.#.###.#.#####.#.###",
-        "#.....#.....#.#.....#.....#.#...#",
-        "#..o..#..o..#.#.....#..o..#.#...#",
-        "#.....#.....#.#.....#.....#.#...#",
-        "#####.#.#####.#.###.#.#####.#.###",
-        "#.....#.....#...#.#.#...#.....#.#",
-        "#.....#.....#...#.#.#...#.....#.#",
-        "#.....#.....#...#.#.#...#.....#.#",
+        "#S.....o.......#.......o.......X#",
+        "#.###########.###.###########.###",
+        "#.#.........#.#...#.........#...#",
+        "#.#.#######.#.#.###.#######.###.#",
+        "#.#.#.....#.#.#.#...#.....#.#...#",
+        "#.#.#.###.#.#.#.#.###.###.#.#.###",
+        "#...#.#.o.#...#...#.o.#...#.#...#",
+        "#.#.#.###.#.#.#.#.###.###.#.#.###",
+        "#.#.#.....#.#.#.#.....#...#.#...#",
+        "#.#.#######.#.#.#######.###.###.#",
+        "#.#.........#.#.#.......#.......#",
+        "#.###########.###.###########.###",
+        "#.....................o..........#",
         "#################################"
       ]},
-    { id:3, name:"Level 3 — The Jungle Path",       enemies:["royal","fixer","ex_pres"],                                          timeLimit:75,
+
+    // ─── Level 3 — Jungle Path ────────────────────────────────────
+    { id:3, name:"Level 3 — The Jungle Path",
+      enemies:["royal","fixer","ex_pres"],
+      timeLimit:75,
       map:[
         "###################################",
-        "#S#..#....#..#....#..#....#..#....#",
-        "#.#..#.##.#..#.##.#..#.##.#..#.##.#",
-        "#....#..#....#..#....#..#....#..#.#",
-        "#.#######.#######.#######.#######.#",
-        "#..#.....#.....#.....#.....#.....##",
-        "##.#.###.#####.#.###.#.#####.###.##",
-        "#..#...#.....#.#...#.#.....#...#..#",
-        "#.###.#####.#.#.###.#.#.#####.###.#",
-        "#...#.....#.#.#...#.#.#.....#...#.#",
-        "##.#.###.###.#.###.#.###.###.###.##",
-        "#..#...#.....#..o..#.....#...#...##",
-        "#.###.#####.#######.#####.###.###.#",
-        "#...#.....#.....#.....#.....#...#.#",
-        "##.#####.###.###.#.###.###.####...##",
-        "#....#.....#.....#.....#.....#..X.#",
+        "#S.....#.........#.........#.....X#",
+        "#.###.###.#######.###.#####.###.###",
+        "#.#.....#.#.....#.#...#...#.#.....#",
+        "#.#.###.#.#.###.#.###.#.###.#.###.#",
+        "#.#.#...#.#.#.#.#.#...#.#...#.#...#",
+        "#.#.#.###.###.#.###.###.###.###.###",
+        "#.#.#.#.....#.....#.....#.....#...#",
+        "#.#.###.#####.###.#####.###.#####.#",
+        "#.#.....#...#.....#...#.#.o.#.....#",
+        "#.#######.#.#########.###.#.#######",
+        "#.........#.....o.....#...#.......#",
+        "#.#########.#########.###.#########",
+        "#.#.......#.#.......#.#.#.......#.#",
+        "#.#.#####.#.#.#####.#.#.#.#####.#.#",
+        "#...#.......#.......o...#.......#.#",
         "###################################"
       ]},
-    { id:4, name:"Level 4 — The Island",            enemies:["royal","fixer","ex_pres","tech","space"],                           timeLimit:90,
+
+    // ─── Level 4 — The Island ─────────────────────────────────────
+    { id:4, name:"Level 4 — The Island",
+      enemies:["royal","fixer","ex_pres","tech","space"],
+      timeLimit:90,
+      map:[
+        "#####################################",
+        "#S.........#.......#.......#.......X#",
+        "#.#######.#.#.###.#.#.###.#.#######.#",
+        "#.#.....#.#.#.#.#.#.#.#.#.#.#.....#.#",
+        "#.#.###.#.#.#.#.#.#.#.#.#.#.#.###.#.#",
+        "#.#.#.....#...#.#...#.#...#...#.#...#",
+        "#.#.#.#########.#####.#########.#.###",
+        "#.#.#.#.......#.......#.......#.#...#",
+        "#.#.#.#.#####.#.o.o.o.#.#####.#.###.#",
+        "#.#.#.#.#...#.#.......#.#...#.#.#...#",
+        "#.#.#.#.#.#.#.#########.#.#.#.#.#.###",
+        "#...#.#.#.#.#...........#.#.#.#.#...#",
+        "###.#.#.###.#############.###.#.#.###",
+        "#...#.#.................#.....#.#...#",
+        "#.#.#.###################.#####.#.###",
+        "#.#.#.........o.......o.....o...#.#.#",
+        "#####################################"
+      ]},
+
+    // ─── Level 5 — The Mansion (two-floor layout, random exit) ───
+    { id:5, name:"Level 5 — The Mansion",
+      enemies:["royal","fixer","ex_pres","tech","space","archivist","current_pres"],
+      timeLimit:120,
+      exitPool:[{tx:33,ty:1},{tx:33,ty:10},{tx:33,ty:19},{tx:1,ty:10}],
       map:[
         "###################################",
-        "#S....#.....#.........#.....#....X#",
-        "#.###.#.###.#.#######.#.###.#.#####",
-        "#...#...#...#...o...#...#...#.....#",
-        "###.#####.#######.#.#####.#######.#",
-        "#.....#.........#.#.....#.......#.#",
-        "#.###.#.#######.#.###.#.#######.#.#",
-        "#...#.#.....#...#...#.#.....#...#.#",
-        "#.###.#####.#.#####.#.#####.#.###.#",
-        "#.....#.....#.......#.....#.......#",
+        "#.....#.......#...........#.......#",
+        "#.###.###.#####.###.#######.###.###",
+        "#.#.....#.#...#.#...#.....#.#.....#",
+        "#.#.###.#.#.#.#.###.#.###.#.#.###.#",
+        "#.#.#...#.#.#.#.#...#.#.#...#.#...#",
+        "#.#.#.###.#.###.#.###.#.#####.###.#",
+        "#.#.#.#o..#.#...#.#...#.......#...#",
+        "#.#.###.###.#.###.#.###########.###",
+        "#.#.....#...#.#...#.#...........#.#",
+        "###.###.###.#.###.###.###.###.#.#.#",
+        "#...#...#...#.....#...#...#...#.#.#",
+        "#.#.#.###.###.#####.#.#.###.###.#.#",
+        "#.#.#.#...#...#...#.#.#.#...#...#.#",
+        "#.#.#.#.###.###.#.###.#.#.###.###.#",
+        "#.#.#.#.#.o.#...#.#...#.#.#...#...#",
+        "#.#.#.#.#.###.###.#.###.###.#.###.#",
+        "#.#.#.#.#.....#...#.#...#...#.#...#",
+        "#.#.###.#######.###.#######.#.#.###",
+        "#S..........................o.....#",
         "###################################"
       ]},
-    { id:5, name:"Level 5 — The Mansion",           enemies:["royal","fixer","ex_pres","tech","space","archivist","current_pres"], timeLimit:105,
+
+    // ─── Level 6 — The Massage Room (special mechanic) ────────────
+    { id:6, name:"Level 6 — The Massage Room",
+      enemies:[],
+      timeLimit:0,
+      massageRoom:true,
       map:[
-        "###################################",
-        "#S....#....o....#.......#........X#",
-        "#.###.#.#######.#.#####.#.#########",
-        "#...#.#.....#...#...#...#.....#...#",
-        "###.#.#####.#.#####.#.#####.#.#.#.#",
-        "#...#.....#.#.....#.#.....#.#.#.#.#",
-        "#.#######.#.#####.#.###.#.#.#.#.#.#",
-        "#.....#...#...#...#...#.#...#...#.#",
-        "#.###.#.#####.#.#####.#.#########.#",
-        "#...#.#.....#.#.....#.#.....o.....#",
-        "###################################"
-      ]},
-    { id:6, name:"Level 6 — The Bedroom (Final)",   enemies:["financier"],                                                        timeLimit:120,
-      map:[
-        "###################################",
-        "#S..o....#.......#.......#......X#",
-        "#.#####.###.###.###.###.###.#####.#",
-        "#.....#.....#...#...#...#.....#...#",
-        "###.#.#######.###.###.#######.#.###",
-        "#...#.......#.....#.....#.....#...#",
-        "#.#########.#.#####.#####.#.#####.#",
-        "#.....o.....#...#.....#...#.....o.#",
-        "###################################"
+        "#################################",
+        "#...............................#",
+        "#...............................#",
+        "#...............................#",
+        "#...............................#",
+        "#S.............................X#",
+        "#...............................#",
+        "#...............................#",
+        "#...............................#",
+        "#...............................#",
+        "#################################"
       ],
-      onCompleteModal: {
-        title: "Safe Room",
-        text:  "You reached the Safe Room and survived the island.\n\nHold tight. Authorities will collect your evidence."
+      onCompleteModal:{
+        title:"Evidence Secured",
+        text:"You crossed the room without waking him.\n\nThe investigation continues.\nThe truth cannot be silenced."
       }}
   ];
 
@@ -469,6 +536,19 @@
   function normalizeMapRows(rows) {
     const maxW = Math.max(...rows.map(r => r.length));
     return rows.map(r => r.length === maxW ? r : r + WALL.repeat(maxW - r.length));
+  }
+
+  // ── Random exit placement for levels with exitPool ────────────
+  function preprocessMap(level) {
+    let rows = level.map.slice(); // shallow copy
+    if (level.exitPool && level.exitPool.length > 0) {
+      rows = rows.map(r => r.replace(/X/g, '.')); // remove any existing X
+      const pick = choice(level.exitPool);
+      const arr  = rows[pick.ty].split('');
+      arr[pick.tx] = 'X';
+      rows[pick.ty] = arr.join('');
+    }
+    return rows;
   }
   function toGrid(rows)  { return rows.map(r => r.split("")); }
   function toRows(grid)  { return grid.map(r => r.join("")); }
@@ -617,6 +697,17 @@
   }
   function tryPlayerStep(dx, dy) {
     if (state !== "playing" || !gameStarted) return;
+
+    // Massage room: block movement during required pause
+    if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom) {
+      if (massagePaused) {
+        statusEl.textContent = "You moved too fast — he's awake!";
+        beep(120, 0.18, "sawtooth", 0.07);
+        handlePlayerCaught("The Financier (awakened!)");
+        return;
+      }
+    }
+
     const nx = player.tx + dx, ny = player.ty + dy;
     if (!isWalkable(nx, ny)) return;
     player.tx = nx; player.ty = ny;
@@ -627,6 +718,20 @@
     checkExit();
     checkEnemyContacts();
     beep(620, 0.02, "square", 0.02);
+
+    // Massage room: count steps; every 4 steps require a pause
+    if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom) {
+      massageSteps++;
+      if (massageSteps >= 4) {
+        massageSteps = 0;
+        massageGroups++;
+        const pauseLen = massageGroups; // 1s, 2s, 3s...
+        massageTimer  = pauseLen;
+        massagePaused = true;
+        beep(300, 0.07, "sine", 0.04);
+        statusEl.textContent = `Hold still for ${pauseLen} second${pauseLen > 1 ? 's' : ''}…`;
+      }
+    }
   }
   function updatePlayerHeld(dt) {
     const d = player.heldDir;
@@ -751,7 +856,8 @@
 
   // ── Parse / load level ───────────────────────────────────────
   function parseLevel(level) {
-    const safeRows = sanitizeLevelRows(level.map);
+    const rawRows  = preprocessMap(level);
+    const safeRows = sanitizeLevelRows(rawRows);
     map = safeRows; mapH = map.length; mapW = map[0].length;
     mapPxW = mapW * TILE; mapPxH = mapH * TILE;
     dots = new Set(); powers = new Set();
@@ -794,6 +900,9 @@
     wallCache = null;
     buildWallCache();
 
+    // Reset massage room state on every level load
+    massageSteps = 0; massageGroups = 0; massageTimer = 0; massagePaused = false;
+
     levelNameEl.textContent = level.name;
     enemyListEl.textContent = enemies.map(e=>e.name).join(" · ");
     const handicapNote = deathHandicap > 0
@@ -832,7 +941,11 @@
     deathHandicap = 0; // fresh start on the next level
     levelIndex++;
     if (levelIndex >= LEVELS.length) {
-      showModal("Investigation Complete!", "You completed all 6 levels.\n\nThe truth is out there.", "Play Again", bon);
+      saveHS(score);
+      modal.classList.add("hidden"); state = "game_over";
+      const playerName = prompt("🏆 Investigation complete!\n\nEnter your name for the leaderboard:", "") || "";
+      leaderboardData   = saveToLeaderboard(playerName, score);
+      leaderboardActive = true;
       return;
     }
     showModal(
@@ -840,6 +953,60 @@
       `You escaped: ${cur.name}\n\nNext: ${LEVELS[levelIndex].name}`,
       "Continue", bon
     );
+  }
+
+  // ── Leaderboard ──────────────────────────────────────────────
+  const LB_KEY = "findEpstine_lb_v1";
+  let leaderboardActive = false;
+  let leaderboardData   = [];
+
+  function getLeaderboard() {
+    try { return JSON.parse(localStorage.getItem(LB_KEY) || "[]"); } catch { return []; }
+  }
+  function saveToLeaderboard(name, pts) {
+    const lb = getLeaderboard();
+    lb.push({ name: (name || "ANON").slice(0, 12).toUpperCase(), score: pts,
+               date: new Date().toLocaleDateString("en-GB") });
+    lb.sort((a, b) => b.score - a.score);
+    const trimmed = lb.slice(0, 10);
+    localStorage.setItem(LB_KEY, JSON.stringify(trimmed));
+    return trimmed;
+  }
+  function renderLeaderboard(lb) {
+    const VW = canvas.clientWidth, VH = canvas.clientHeight;
+    const cw = Math.min(360, VW - 32), ch = Math.min(460, VH * 0.88);
+    const cx = VW / 2, cy = VH / 2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.84)"; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = "rgba(10,8,16,0.98)";
+    roundRect(ctx, cx-cw/2, cy-ch/2, cw, ch, 18); ctx.fill();
+    ctx.strokeStyle = "rgba(245,158,11,0.40)"; ctx.lineWidth = 1.5;
+    roundRect(ctx, cx-cw/2, cy-ch/2, cw, ch, 18); ctx.stroke();
+
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#f59e0b";
+    ctx.font = `bold 20px system-ui, sans-serif`;
+    ctx.fillText("🏆  TOP INVESTIGATORS", cx, cy - ch/2 + 28);
+
+    const entries = lb.slice(0, 10);
+    const rowH = Math.min(32, (ch - 110) / 10);
+    const medals = ["🥇","🥈","🥉"];
+    entries.forEach((entry, i) => {
+      const ry = cy - ch/2 + 68 + i * rowH;
+      ctx.fillStyle = i < 3 ? ["#f59e0b","#9ca3af","#b45309"][i] : "rgba(255,255,255,0.52)";
+      ctx.font = `${i < 3 ? "bold " : ""}${Math.floor(rowH * 0.50)}px monospace`;
+      ctx.textAlign = "left";
+      ctx.fillText(`${medals[i] || (i+1)+"."} ${entry.name}`, cx - cw/2 + 18, ry);
+      ctx.textAlign = "right";
+      ctx.fillText(Number(entry.score).toLocaleString(), cx + cw/2 - 18, ry);
+    });
+    if (!entries.length) {
+      ctx.fillStyle = "rgba(255,255,255,0.30)"; ctx.textAlign = "center";
+      ctx.font = "14px system-ui"; ctx.fillText("No scores yet!", cx, cy);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.30)"; ctx.textAlign = "center";
+    ctx.font = "12px system-ui";
+    ctx.fillText("Press  Restart Game  to play again", cx, cy + ch/2 - 18);
   }
 
   // ── Pickups / collisions ─────────────────────────────────────
@@ -944,17 +1111,25 @@
     player.heldDir = dirFromKeys();
   });
 
+  // Pizza D-pad centre button
+  const dpadPizzaBtn = document.getElementById("dpadPizza");
+  if (dpadPizzaBtn) {
+    dpadPizzaBtn.addEventListener("pointerdown", e => { e.preventDefault(); firePizza(); });
+    dpadPizzaBtn.addEventListener("touchstart",  e => { e.preventDefault(); firePizza(); }, { passive:false });
+  }
+
   document.querySelectorAll(".dpad-btn").forEach(btn => {
     btn.addEventListener("pointerdown", e => {
       e.preventDefault(); btn.setPointerCapture(e.pointerId);
       if (!gameStarted) return;
       const dir=btn.dataset.dir;
+      if (!dir) return; // pizza button has no data-dir — handled separately, no movement
       const d = dir==="up"?{x:0,y:-1}:dir==="down"?{x:0,y:1}:dir==="left"?{x:-1,y:0}:{x:1,y:0};
       player.heldDir=d;
       if (player.stepCooldown<=0&&(d.x||d.y)) { tryPlayerStep(d.x,d.y); player.stepCooldown=STEP_INTERVAL; }
     });
-    btn.addEventListener("pointerup",     e => { e.preventDefault(); player.heldDir=dirFromKeys(); });
-    btn.addEventListener("pointercancel", ()  => { player.heldDir=dirFromKeys(); });
+    btn.addEventListener("pointerup",     e => { e.preventDefault(); if (!btn.dataset.dir) return; player.heldDir=dirFromKeys(); });
+    btn.addEventListener("pointercancel", ()  => { if (!btn.dataset.dir) return; player.heldDir=dirFromKeys(); });
   });
 
   let touchActive=false, touchOrigin=null;
@@ -984,6 +1159,7 @@
     state="playing";
   }
   function restartGame() {
+    leaderboardActive = false;
     hideModal(); levelIndex=0; score=0; lives=3; deathHandicap=0;
     scoreEl.textContent="0"; livesEl.textContent="3";
     parseLevel(LEVELS[0]); resetCombo();
@@ -1063,6 +1239,105 @@
     ctx.font = `bold ${Math.floor(TILE * 0.35)}px monospace`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("EXIT", ep.x + TILE/2, ep.y + TILE/2);
+  }
+
+  // ── Massage Room: sleeping Financier + step HUD ──────────────
+  function drawMassageRoom() {
+    if (!LEVELS[levelIndex] || !LEVELS[levelIndex].massageRoom) return;
+    const VW = canvas.clientWidth, VH = canvas.clientHeight;
+    const T  = TILE;
+    const cx = mapPxW / 2 - cameraX;
+    const cy = mapPxH / 2 - cameraY;
+
+    // ── Massage table ──────────────────────────────
+    // Legs
+    ctx.fillStyle = "#5c3317";
+    for (const [lx, ly] of [
+      [cx - T*2.6, cy + T*0.28], [cx + T*2.6, cy + T*0.28],
+      [cx - T*2.6, cy - T*0.28], [cx + T*2.6, cy - T*0.28]
+    ]) { ctx.fillRect(lx - 2, ly, 4, T * 0.55); }
+
+    // Table top
+    ctx.fillStyle = "#7c3f1a";
+    ctx.beginPath(); roundRect(ctx, cx - T*3, cy - T*0.36, T*6, T*0.72, 4); ctx.fill();
+    ctx.strokeStyle = "#a0522d"; ctx.lineWidth = 1; ctx.stroke();
+
+    // White sheet
+    ctx.fillStyle = "rgba(235,235,235,0.90)";
+    ctx.beginPath(); roundRect(ctx, cx - T*2.8, cy - T*0.29, T*5.6, T*0.58, 3); ctx.fill();
+
+    // ── Sleeping figure ──────────────────────────
+    // Body (overweight, lying flat)
+    ctx.fillStyle = "#fde68a";
+    ctx.beginPath(); ctx.ellipse(cx - T*0.2, cy, T*2.0, T*0.30, 0, 0, Math.PI*2); ctx.fill();
+
+    // Towel
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
+    ctx.beginPath(); roundRect(ctx, cx - T*1.6, cy - T*0.26, T*2.1, T*0.52, 2); ctx.fill();
+
+    // Head
+    ctx.fillStyle = "#fde68a";
+    ctx.beginPath(); ctx.ellipse(cx + T*2.0, cy, T*0.42, T*0.35, 0, 0, Math.PI*2); ctx.fill();
+    // Bald highlight
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.beginPath(); ctx.arc(cx + T*2.0, cy - T*0.12, T*0.12, 0, Math.PI*2); ctx.fill();
+    // Closed eye
+    ctx.strokeStyle = "#a07850"; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.arc(cx + T*2.1, cy - T*0.03, T*0.09, Math.PI, 0); ctx.stroke();
+
+    // ZZZs (animated float-up)
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const sizes = [T*0.52, T*0.66, T*0.80];
+    const offsets = [[T*0.6, -T*0.7], [T*1.0, -T*1.15], [T*1.5, -T*1.65]];
+    sizes.forEach((sz, i) => {
+      const phase  = ((gameTick * 0.45 + i * 0.35) % 1.0);
+      const alpha  = Math.max(0, Math.min(1, phase < 0.7 ? phase / 0.3 : (1 - phase) / 0.3));
+      const floatY = offsets[i][1] - phase * T * 0.4;
+      ctx.globalAlpha = alpha * 0.80;
+      ctx.fillStyle = "rgba(180,180,255,1)";
+      ctx.font = `bold ${Math.floor(sz)}px sans-serif`;
+      ctx.fillText("z", cx + T*2.0 + offsets[i][0], cy + floatY);
+    });
+    ctx.globalAlpha = 1;
+
+    // ── Step progress HUD (bottom-centre) ────────
+    if (!massagePaused) {
+      const bx = VW / 2 - T * 2.5, by = VH - T * 2.8;
+      ctx.fillStyle = "rgba(0,0,0,0.65)";
+      roundRect(ctx, bx - 10, by - 8, T * 5 + 20, T * 1.2, 8); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.70)";
+      ctx.font = `bold ${Math.floor(T * 0.52)}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.fillText(`Steps: ${massageSteps} / 4`, VW / 2, by + T * 0.26);
+      // green bar
+      ctx.fillStyle = "rgba(255,255,255,0.10)";
+      roundRect(ctx, bx, by + T * 0.54, T * 5, T * 0.27, 3); ctx.fill();
+      if (massageSteps > 0) {
+        ctx.fillStyle = "#22c55e";
+        roundRect(ctx, bx, by + T * 0.54, (massageSteps / 4) * T * 5, T * 0.27, 3); ctx.fill();
+      }
+    }
+
+    // ── HOLD STILL overlay ───────────────────────
+    if (massagePaused) {
+      ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(0, 0, VW, VH);
+      const secs = Math.ceil(massageTimer);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fbbf24";
+      ctx.font = `900 ${Math.floor(T * 2.1)}px system-ui, sans-serif`;
+      ctx.fillText("HOLD STILL", VW / 2, VH / 2 - T * 1.6);
+      ctx.fillStyle = "#fff";
+      ctx.font = `900 ${Math.floor(T * 3.8)}px monospace`;
+      ctx.fillText(secs, VW / 2, VH / 2 + T * 0.5);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.font = `${Math.floor(T * 0.68)}px system-ui`;
+      ctx.fillText(secs === 1 ? "second" : "seconds", VW / 2, VH / 2 + T * 2.1);
+      ctx.fillStyle = "rgba(255,80,80,0.80)";
+      ctx.font = `bold ${Math.floor(T * 0.58)}px system-ui`;
+      ctx.fillText("Moving now will wake him!", VW / 2, VH / 2 + T * 3.0);
+    }
   }
 
   // ── Draw evidence ────────────────────────────────────────────
@@ -1185,44 +1460,32 @@
     ctx.restore();
   }
 
-  // ── Draw enemy sprite (ghost-style + symbol) ──────────────────
+  // ── Draw enemy sprite — character-specific humanoids ──────────
   function drawEnemy(e, sx, sy) {
-    const r   = e.r;
-    const fr  = frightenedTimer > 0;
-    const flashing = fr && frightenedTimer < 2.2 && Math.floor(frightenedTimer*4)%2===0;
-    const col = fr ? (flashing ? "#94a3b8" : "#1d4ed8") : e.color;
+    const r  = e.r;
+    const fr = frightenedTimer > 0;
+    const flashing = fr && frightenedTimer < 2.2 && Math.floor(frightenedTimer * 4) % 2 === 0;
 
     ctx.save();
     ctx.translate(sx, sy);
 
-    // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.beginPath(); ctx.ellipse(1, r*0.92, r*0.68, r*0.20, 0, 0, Math.PI*2); ctx.fill();
-
-    // Ghost body
-    const gw = r*1.42;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.arc(0, -r*0.15, gw/2, Math.PI, 0); // top dome
-    ctx.lineTo(gw/2, r*0.72);
-    // wavy skirt (3 bumps)
-    const bw2 = gw/3;
-    for (let i=2;i>=0;i--) {
-      const bx = gw/2 - i*bw2 - bw2/2;
-      ctx.arc(bx, r*0.72, bw2/2, 0, Math.PI, true);
-    }
-    ctx.closePath();
-    ctx.fill();
-
-    // Subtle glow outline when frightened
     if (fr) {
-      ctx.strokeStyle = flashing ? "rgba(255,255,255,0.6)" : "rgba(96,165,250,0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    if (fr) {
-      // Scared X eyes
+      // Frightened state: blue ghost with scared face
+      const col = flashing ? "#94a3b8" : "#1d4ed8";
+      ctx.fillStyle = "rgba(0,0,0,0.28)";
+      ctx.beginPath(); ctx.ellipse(1, r*0.92, r*0.68, r*0.20, 0, 0, Math.PI*2); ctx.fill();
+      const gw = r * 1.42;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(0, -r*0.15, gw/2, Math.PI, 0);
+      ctx.lineTo(gw/2, r*0.72);
+      const bw2 = gw / 3;
+      for (let i = 2; i >= 0; i--) {
+        ctx.arc(gw/2 - i*bw2 - bw2/2, r*0.72, bw2/2, 0, Math.PI, true);
+      }
+      ctx.closePath(); ctx.fill();
+      if (flashing) { ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = 1.5; ctx.stroke(); }
+      // X eyes
       ctx.strokeStyle = "rgba(255,255,255,0.80)"; ctx.lineWidth = 1.3;
       for (const ex of [-r*0.22, r*0.22]) {
         ctx.beginPath();
@@ -1230,105 +1493,238 @@
         ctx.moveTo(ex+r*0.10, -r*0.28-r*0.10); ctx.lineTo(ex-r*0.10, -r*0.28+r*0.10);
         ctx.stroke();
       }
-      // Wavy mouth
-      ctx.beginPath(); ctx.strokeStyle="rgba(255,255,255,0.55)"; ctx.lineWidth=1.2;
-      ctx.moveTo(-r*0.32, -r*0.04);
-      for (let i=0;i<=6;i++) {
-        ctx.lineTo(-r*0.32+(r*0.64*i/6), -r*0.04+(i%2===0?r*0.09:-r*0.09));
-      }
-      ctx.stroke();
-    } else {
-      // Normal eyes (pupils track player direction)
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(-r*0.22, -r*0.28, r*0.20, 0, Math.PI*2);
-      ctx.arc( r*0.22, -r*0.28, r*0.20, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = "#1e1b4b";
-      const ox = e.dir.x*r*0.07, oy = e.dir.y*r*0.07;
-      ctx.beginPath();
-      ctx.arc(-r*0.22+ox, -r*0.28+oy, r*0.11, 0, Math.PI*2);
-      ctx.arc( r*0.22+ox, -r*0.28+oy, r*0.11, 0, Math.PI*2);
-      ctx.fill();
-      // Pupil shine
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.beginPath();
-      ctx.arc(-r*0.20+ox, -r*0.31+oy, r*0.05, 0, Math.PI*2);
-      ctx.arc( r*0.24+ox, -r*0.31+oy, r*0.05, 0, Math.PI*2);
-      ctx.fill();
+      ctx.restore(); return;
+    }
 
-      // Enemy-specific symbol
-      drawEnemySymbol(e.id, r);
+    // Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.beginPath(); ctx.ellipse(1, r*0.88, r*0.65, r*0.18, 0, 0, Math.PI*2); ctx.fill();
+
+    switch (e.id) {
+      case "financier":    _drawFinancier(r);    break;
+      case "royal":        _drawRoyal(r);        break;
+      case "tech":         _drawTech(r);         break;
+      case "fixer":        _drawFixer(r);        break;
+      case "space":        _drawSpace(r);        break;
+      case "archivist":    _drawArchivist(r);    break;
+      case "ex_pres":      _drawExPres(r);       break;
+      case "current_pres": _drawCurrentPres(r);  break;
+      default:             _drawGenericEnemy(r, e.color); break;
     }
     ctx.restore();
   }
 
-  function drawEnemySymbol(id, r) {
-    ctx.save();
-    ctx.fillStyle   = "rgba(255,255,255,0.82)";
-    ctx.strokeStyle = "rgba(255,255,255,0.82)";
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  function _drawGenericEnemy(r, color) {
+    const gw = r * 1.42;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, -r*0.15, gw/2, Math.PI, 0);
+    ctx.lineTo(gw/2, r*0.72);
+    const bw2 = gw / 3;
+    for (let i = 2; i >= 0; i--) ctx.arc(gw/2 - i*bw2 - bw2/2, r*0.72, bw2/2, 0, Math.PI, true);
+    ctx.closePath(); ctx.fill();
+  }
 
-    switch (id) {
-      case "financier":
-        ctx.font = `bold ${Math.round(r*0.68)}px sans-serif`;
-        ctx.fillText("$", 0, r*0.28); break;
+  function _drawFinancier(r) {
+    // Fat suit, bald, glasses — The Financier
+    ctx.fillStyle = "#1e3a5f";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.78, r*0.18); ctx.lineTo(-r*0.94, r*1.08);
+    ctx.lineTo(r*0.94, r*1.08);  ctx.lineTo(r*0.78, r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.22, r*0.20); ctx.lineTo(0, r*0.65); ctx.lineTo(r*0.22, r*0.20);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#dc2626";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.10, r*0.22); ctx.lineTo(0, r*0.62); ctx.lineTo(r*0.10, r*0.22);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#fde68a";
+    ctx.beginPath(); ctx.ellipse(0, -r*0.30, r*0.52, r*0.44, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#374151"; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(-r*0.19, -r*0.32, r*0.15, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc( r*0.19, -r*0.32, r*0.15, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.04,-r*0.32); ctx.lineTo(r*0.04,-r*0.32); ctx.stroke();
+    ctx.fillStyle="#f59e0b"; ctx.font=`bold ${Math.round(r*0.44)}px sans-serif`;
+    ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("$",0,r*0.85);
+  }
 
-      case "royal":
-        // crown outline
-        ctx.lineWidth = 1.3;
-        ctx.beginPath();
-        ctx.moveTo(-r*0.33, r*0.32); ctx.lineTo(-r*0.33, r*0.08);
-        ctx.lineTo(-r*0.16, r*0.22); ctx.lineTo(0, r*0.06);
-        ctx.lineTo( r*0.16, r*0.22); ctx.lineTo( r*0.33, r*0.08);
-        ctx.lineTo( r*0.33, r*0.32); ctx.closePath();
-        ctx.stroke(); break;
+  function _drawRoyal(r) {
+    // Military uniform + crown — The Royal Guest
+    ctx.fillStyle = "#1e1b4b";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.62,r*0.18); ctx.lineTo(-r*0.72,r*1.05);
+    ctx.lineTo(r*0.72,r*1.05);  ctx.lineTo(r*0.62,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath(); ctx.ellipse(-r*0.70,r*0.22,r*0.18,r*0.10,-0.4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( r*0.70,r*0.22,r*0.18,r*0.10, 0.4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fde68a";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.40,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.30,-r*0.65); ctx.lineTo(-r*0.30,-r*0.88);
+    ctx.lineTo(-r*0.15,-r*0.72); ctx.lineTo(0,-r*0.96);
+    ctx.lineTo(r*0.15,-r*0.72);  ctx.lineTo(r*0.30,-r*0.88);
+    ctx.lineTo(r*0.30,-r*0.65);  ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#ef4444"; ctx.beginPath(); ctx.arc(0,-r*0.88,r*0.06,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#3b82f6";
+    ctx.beginPath(); ctx.arc(-r*0.22,-r*0.80,r*0.05,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( r*0.22,-r*0.80,r*0.05,0,Math.PI*2); ctx.fill();
+  }
 
-      case "tech":
-        // circuit nodes
-        ctx.lineWidth = 1.0;
-        [[-0.28,0.18],[0,0.18],[0.28,0.18]].forEach(([x,y]) => {
-          ctx.beginPath(); ctx.arc(x*r, y*r, r*0.07, 0, Math.PI*2); ctx.fill();
-        });
-        ctx.beginPath();
-        ctx.moveTo(-r*0.28, r*0.18); ctx.lineTo(r*0.28, r*0.18);
-        ctx.moveTo(0, r*0.02); ctx.lineTo(0, r*0.18);
-        ctx.stroke(); break;
-
-      case "fixer":
-        // cross / fix symbol
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        ctx.moveTo(-r*0.22, r*0.10); ctx.lineTo(r*0.22, r*0.10);
-        ctx.moveTo(0, r*0.10-r*0.22); ctx.lineTo(0, r*0.10+r*0.22);
-        ctx.stroke(); break;
-
-      case "space":
-        ctx.font = `bold ${Math.round(r*0.60)}px sans-serif`;
-        ctx.fillText("★", 0, r*0.24); break;
-
-      case "archivist":
-        // book lines
-        ctx.fillRect(-r*0.28, r*0.08, r*0.56, r*0.06);
-        ctx.fillRect(-r*0.28, r*0.18, r*0.56, r*0.06);
-        ctx.fillRect(-r*0.28, r*0.28, r*0.40, r*0.06); break;
-
-      case "ex_pres":
-        // tie shape
-        ctx.beginPath();
-        ctx.moveTo(0, r*0.06); ctx.lineTo(-r*0.12, r*0.20);
-        ctx.lineTo(0, r*0.38); ctx.lineTo(r*0.12, r*0.20);
-        ctx.closePath(); ctx.fill(); break;
-
-      case "current_pres":
-        // squiggle hair
-        ctx.strokeStyle = "rgba(255,200,50,0.9)"; ctx.lineWidth = 2.4;
-        ctx.beginPath();
-        ctx.moveTo(-r*0.32, r*0.10);
-        ctx.bezierCurveTo(-r*0.32, -r*0.08, r*0.32, -r*0.08, r*0.32, r*0.10);
-        ctx.stroke(); break;
+  function _drawTech(r) {
+    // Slim black turtleneck, spiky hair — The Tech Baron
+    ctx.fillStyle = "#111827";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.54,r*0.18); ctx.lineTo(-r*0.60,r*1.05);
+    ctx.lineTo(r*0.60,r*1.05);  ctx.lineTo(r*0.54,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#1f2937";
+    ctx.beginPath(); roundRect(ctx,-r*0.32,r*0.08,r*0.64,r*0.22,3); ctx.fill();
+    ctx.fillStyle = "#fcd5a6";
+    ctx.beginPath(); ctx.arc(0,-r*0.30,r*0.38,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#1f2937";
+    for (let i=-2;i<=2;i++) {
+      ctx.beginPath();
+      ctx.moveTo(i*r*0.14-r*0.08,-r*0.60);
+      ctx.lineTo(i*r*0.14,-r*0.86-Math.abs(i)*r*0.07);
+      ctx.lineTo(i*r*0.14+r*0.08,-r*0.60);
+      ctx.closePath(); ctx.fill();
     }
-    ctx.restore();
+    ctx.strokeStyle="#22c55e"; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(-r*0.20,r*0.62); ctx.lineTo(r*0.20,r*0.62);
+    ctx.moveTo(-r*0.20,r*0.62); ctx.lineTo(-r*0.20,r*0.78);
+    ctx.moveTo(r*0.20,r*0.62);  ctx.lineTo(r*0.20,r*0.78); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-r*0.20,r*0.84,r*0.06,0,Math.PI*2);
+    ctx.arc(r*0.20,r*0.84,r*0.06,0,Math.PI*2); ctx.stroke();
+  }
+
+  function _drawFixer(r) {
+    // Dark suit, sunglasses, briefcase — The Fixer
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.65,r*0.15); ctx.lineTo(-r*0.78,r*1.08);
+    ctx.lineTo(r*0.78,r*1.08);  ctx.lineTo(r*0.65,r*0.15);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#1e3a5f";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.08,r*0.15); ctx.lineTo(-r*0.16,r*0.85);
+    ctx.lineTo(0,r*0.78); ctx.lineTo(r*0.16,r*0.85); ctx.lineTo(r*0.08,r*0.15);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#78350f";
+    ctx.beginPath(); roundRect(ctx,r*0.52,r*0.52,r*0.40,r*0.30,2); ctx.fill();
+    ctx.strokeStyle="#92400e"; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle="#f5d0a9";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.40,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#0f172a";
+    ctx.beginPath(); roundRect(ctx,-r*0.39,-r*0.39,r*0.34,r*0.16,3); ctx.fill();
+    ctx.beginPath(); roundRect(ctx, r*0.05,-r*0.39,r*0.34,r*0.16,3); ctx.fill();
+    ctx.strokeStyle="#374151"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(-r*0.05,-r*0.32); ctx.lineTo(r*0.05,-r*0.32); ctx.stroke();
+    ctx.fillStyle="#1c1917";
+    ctx.beginPath(); ctx.ellipse(0,-r*0.60,r*0.40,r*0.13,0,Math.PI,0); ctx.fill();
+  }
+
+  function _drawSpace(r) {
+    // White suit, helmet visor — The Space Entrepreneur
+    ctx.fillStyle="#e2e8f0";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.65,r*0.18); ctx.lineTo(-r*0.76,r*1.08);
+    ctx.lineTo(r*0.76,r*1.08);  ctx.lineTo(r*0.65,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#94a3b8";
+    ctx.fillRect(-r*0.55,r*0.40,r*0.22,r*0.50);
+    ctx.fillRect( r*0.33,r*0.40,r*0.22,r*0.50);
+    ctx.strokeStyle="#94a3b8"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.52,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="rgba(251,191,36,0.72)";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.44,Math.PI*1.1,0,true); ctx.fill();
+    ctx.fillStyle="#fde68a";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.33,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#f59e0b"; ctx.font=`bold ${Math.round(r*0.42)}px sans-serif`;
+    ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("★",0,r*0.78);
+  }
+
+  function _drawArchivist(r) {
+    // Cardigan, glasses, grey hair, book — The Archivist
+    ctx.fillStyle="#92400e";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.60,r*0.18); ctx.lineTo(-r*0.68,r*1.05);
+    ctx.lineTo(r*0.68,r*1.05);  ctx.lineTo(r*0.60,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#78350f"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,r*0.20); ctx.lineTo(0,r*1.05); ctx.stroke();
+    ctx.fillStyle="#fde68a";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.40,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#9ca3af";
+    ctx.beginPath(); ctx.ellipse(0,-r*0.62,r*0.40,r*0.17,0,Math.PI,0); ctx.fill();
+    ctx.beginPath(); ctx.arc(-r*0.32,-r*0.52,r*0.14,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( r*0.32,-r*0.52,r*0.14,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#374151"; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.arc(-r*0.17,-r*0.30,r*0.13,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc( r*0.17,-r*0.30,r*0.13,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#1e3a5f";
+    ctx.beginPath(); roundRect(ctx,r*0.30,r*0.35,r*0.36,r*0.46,2); ctx.fill();
+    ctx.fillStyle="#fff";
+    ctx.fillRect(r*0.37,r*0.43,r*0.22,r*0.05);
+    ctx.fillRect(r*0.37,r*0.53,r*0.22,r*0.05);
+    ctx.fillRect(r*0.37,r*0.63,r*0.16,r*0.05);
+  }
+
+  function _drawExPres(r) {
+    // Distinguished suit, grey side-parted hair, red tie — The Ex President
+    ctx.fillStyle="#1e3a5f";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.65,r*0.18); ctx.lineTo(-r*0.75,r*1.08);
+    ctx.lineTo(r*0.75,r*1.08);  ctx.lineTo(r*0.65,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#fff";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.20,r*0.18); ctx.lineTo(-r*0.12,r*0.70);
+    ctx.lineTo(r*0.12,r*0.70);  ctx.lineTo(r*0.20,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#7f1d1d";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.09,r*0.20); ctx.lineTo(-r*0.16,r*0.80);
+    ctx.lineTo(0,r*0.72); ctx.lineTo(r*0.16,r*0.80); ctx.lineTo(r*0.09,r*0.20);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#f5d0a9";
+    ctx.beginPath(); ctx.arc(0,-r*0.28,r*0.40,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#9ca3af";
+    ctx.beginPath(); ctx.ellipse(-r*0.08,-r*0.62,r*0.38,r*0.17,-0.15,Math.PI,0); ctx.fill();
+    ctx.beginPath(); ctx.arc(-r*0.30,-r*0.52,r*0.15,0,Math.PI*2); ctx.fill();
+  }
+
+  function _drawCurrentPres(r) {
+    // Orange face, golden hair swoop, long red tie — The Current President
+    ctx.fillStyle="#1f2937";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.65,r*0.18); ctx.lineTo(-r*0.75,r*1.08);
+    ctx.lineTo(r*0.75,r*1.08);  ctx.lineTo(r*0.65,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#dc2626";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.10,r*0.18); ctx.lineTo(-r*0.18,r*1.05);
+    ctx.lineTo(0,r*0.95); ctx.lineTo(r*0.18,r*1.05); ctx.lineTo(r*0.10,r*0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#fb923c";
+    ctx.beginPath(); ctx.ellipse(0,-r*0.28,r*0.44,r*0.40,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#fbbf24";
+    ctx.beginPath();
+    ctx.moveTo(-r*0.44,-r*0.55);
+    ctx.bezierCurveTo(-r*0.52,-r*0.92,r*0.55,-r*0.94,r*0.44,-r*0.55);
+    ctx.bezierCurveTo(r*0.56,-r*0.70,-r*0.36,-r*0.70,-r*0.44,-r*0.55);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#1c1917";
+    ctx.beginPath(); ctx.arc(-r*0.17,-r*0.30,r*0.09,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( r*0.17,-r*0.30,r*0.09,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#c2410c"; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(-r*0.18,-r*0.08);
+    ctx.bezierCurveTo(-r*0.10,-r*0.14,r*0.10,-r*0.14,r*0.18,-r*0.08);
+    ctx.stroke();
   }
 
   // ── Draw all entities ────────────────────────────────────────
@@ -1456,6 +1852,16 @@
         timerWrap.classList.remove("timer-urgent");
       }
 
+      // Massage room: count down the required pause
+      if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom && massagePaused) {
+        massageTimer -= dt;
+        if (massageTimer <= 0) {
+          massagePaused = false;
+          massageTimer  = 0;
+          statusEl.textContent = `Good. Move ${4 - massageSteps} more step${(4 - massageSteps) !== 1 ? 's' : ''}, then hold still again.`;
+        }
+      }
+
       updatePlayerHeld(dt);
       updatePizzas(dt);
       for (const e of enemies) updateEnemy(e, dt);
@@ -1491,13 +1897,17 @@
 
     drawMap();
     drawEvidence();
+    drawMassageRoom();
     drawEntities();
     drawPizzas();
     drawParticles();
     drawOverlay();
     drawPizzaHUD();
 
-    if (state === "game_over") drawGameOver();
+    if (state === "game_over") {
+      if (leaderboardActive) renderLeaderboard(leaderboardData);
+      else drawGameOver();
+    }
 
     requestAnimationFrame(loop);
   }

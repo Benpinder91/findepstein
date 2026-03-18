@@ -553,9 +553,26 @@ kbd {
    ════════════════════════════════════════ */
 .hidden { display: none !important; }
 
+/* ── Pizza D-pad centre button ── */
+.dpad-pizza {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 20px;
+  background: rgba(249,115,22,0.14);
+  border-color: rgba(249,115,22,0.38);
+  transition: background 0.1s, transform 0.08s;
+}
+.dpad-pizza:hover  { background: rgba(249,115,22,0.28); }
+.dpad-pizza:active { transform: scale(0.88); background: rgba(249,115,22,0.40); }
+
 @media (max-width: 520px) {
-  .stage     { padding: 8px; }
-  .dpad-grid { gap: 8px; }
-  .btn       { padding: 6px 9px; font-size: 12px; }
+  .stage       { padding: 8px; }
+  .dpad-grid   { gap: 8px; }
+  .btn         { padding: 6px 9px; font-size: 12px; }
   .start-title { font-size: 52px; }
+  .dpad-btn    { font-size: 20px; border-radius: 12px; }
+  .hud         { padding: 6px 8px; }
+  .hud-right   { gap: 6px; }
+  /* Hide toggle labels on very small screens, keep checkboxes */
+  .hud-right .toggle span { font-size: 11px; }
 }

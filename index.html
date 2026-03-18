@@ -20,6 +20,7 @@
 
       <div class="start-how">
         <div class="how-row"><kbd>↑↓←→</kbd> <span class="how-or">or</span> <kbd>WASD</kbd> <span class="how-desc">— Move</span></div>
+        <div class="how-row"><kbd>SPACE</kbd> <span class="how-or">or</span> <span class="ic-pow">🍕</span> <span class="how-desc">Throw pizza — stuns enemies · <em>+25 pts</em></span></div>
         <div class="how-row"><span class="ic-dot">●</span> <span class="how-desc">Evidence files — <em>+10 pts each</em></span></div>
         <div class="how-row"><span class="ic-pow">◉</span> <span class="how-desc">Power evidence — weakens enemies · <em>+50 pts</em></span></div>
         <div class="how-row"><span class="ic-exit">EXIT</span> <span class="how-desc">Reach the exit to advance</span></div>
@@ -76,10 +77,11 @@
       <div class="dpad-grid">
         <button class="dpad-btn" data-dir="up"    aria-label="Up">▲</button>
         <button class="dpad-btn" data-dir="left"  aria-label="Left">◀</button>
+        <button class="dpad-btn dpad-pizza" id="dpadPizza" aria-label="Throw Pizza">🍕</button>
         <button class="dpad-btn" data-dir="down"  aria-label="Down">▼</button>
         <button class="dpad-btn" data-dir="right" aria-label="Right">▶</button>
       </div>
-      <div class="hint">Hold Arrow / WASD · D-Pad · Touch drag on canvas · R = restart level</div>
+      <div class="hint">Arrow/WASD to move · 🍕 = throw pizza · Touch-drag on canvas · R = restart</div>
     </div>
   </main>
 
@@ -108,7 +110,7 @@
         <li>🎮 Fund new levels &amp; features</li>
         <li>📰 Support independent journalism</li>
       </ul>
-      <a class="btn kofi-link" id="kofiLink" href="https://ko-fi.com/YOURKOFINAME" target="_blank" rel="noopener noreferrer">
+      <a class="btn kofi-link" id="kofiLink" href="https://ko-fi.com/findepstein" target="_blank" rel="noopener noreferrer">
         <span class="kofi-logo">Ko-fi</span> Donate £5
       </a>
       <p class="donate-note">Opens Ko-fi in a new tab · Secure · No account needed</p>

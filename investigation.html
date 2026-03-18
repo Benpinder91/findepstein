@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Epstein Investigation — FindEpstein.com</title>
+  <meta name="description" content="An independent investigation into the Jeffrey Epstein network. Key facts, timeline, named associates, and unanswered questions." />
+  <meta property="og:title" content="The Epstein Investigation — FindEpstein.com" />
+  <meta property="og:description" content="Independent research into the Epstein network. Key facts, timeline, and unanswered questions." />
+  <meta property="og:url" content="https://www.findepstein.com/investigation.html" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://www.findepstein.com/investigation.html" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07070a; --accent: #e94560; --gold: #f59e0b;
+      --text: rgba(255,255,255,0.90); --muted: rgba(255,255,255,0.50);
+      --border: rgba(255,255,255,0.09);
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: Georgia, 'Times New Roman', serif;
+      line-height: 1.78; overflow-x: hidden;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 36px 36px; animation: gridDrift 22s linear infinite;
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes gridDrift { from { background-position:0 0; } to { background-position:36px 36px; } }
+    .page { position: relative; z-index: 1; }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(7,7,10,0.94); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .nav-brand { font-family: system-ui,sans-serif; font-weight: 900; color: var(--accent); font-size: 16px; text-decoration: none; letter-spacing: 0.02em; }
+    .nav-links { display: flex; gap: 18px; }
+    .nav-links a { font-family: system-ui,sans-serif; font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero bar ── */
+    .hero-bar {
+      background: linear-gradient(135deg, rgba(233,69,96,0.10) 0%, rgba(245,158,11,0.06) 100%);
+      border-bottom: 1px solid rgba(233,69,96,0.18);
+      padding: 52px 20px 44px; text-align: center;
+    }
+    .eyebrow { font-family: system-ui,sans-serif; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; opacity: 0.38; margin-bottom: 14px; }
+    .hero-bar h1 { font-size: clamp(28px,6vw,50px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; }
+    .hero-bar h1 span { color: var(--accent); }
+    .hero-bar .sub { font-family: system-ui,sans-serif; font-size: 15px; opacity: 0.52; max-width: 52ch; margin: 0 auto; line-height: 1.65; }
+
+    /* ── Content ── */
+    .content { max-width: 760px; margin: 0 auto; padding: 52px 20px 90px; }
+
+    h2 {
+      font-family: system-ui,sans-serif; font-size: clamp(17px,4vw,24px);
+      font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--gold); margin: 52px 0 20px; padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+    h2:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+    p { margin-bottom: 20px; font-size: 16px; opacity: 0.84; }
+
+    .callout {
+      margin: 30px 0; padding: 18px 24px;
+      background: rgba(233,69,96,0.06); border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+    }
+    .callout p { margin: 0; font-style: italic; opacity: 0.78; }
+
+    /* ── Timeline ── */
+    .timeline { list-style: none; display: grid; gap: 12px; margin-bottom: 28px; }
+    .timeline li {
+      display: grid; grid-template-columns: 72px 1fr; gap: 16px;
+      padding: 14px 18px; background: rgba(255,255,255,0.028);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .tl-year { font-family: system-ui,sans-serif; font-size: 12px; font-weight: 900; color: var(--gold); padding-top: 2px; }
+    .tl-text { font-size: 14px; opacity: 0.76; line-height: 1.6; }
+
+    /* ── Associates ── */
+    .associates-grid { display: grid; gap: 10px; margin-bottom: 28px; }
+    .associate {
+      padding: 14px 18px; background: rgba(255,255,255,0.028);
+      border: 1px solid var(--border); border-radius: 10px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .assoc-role {
+      font-family: system-ui,sans-serif; font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 3px 9px; border-radius: 5px; flex-shrink: 0; margin-top: 2px; white-space: nowrap;
+    }
+    .role-convicted { background: rgba(220,38,38,0.18); color: #fca5a5; border: 1px solid rgba(220,38,38,0.28); }
+    .role-named     { background: rgba(245,158,11,0.10); color: var(--gold);  border: 1px solid rgba(245,158,11,0.22); }
+    .assoc-body { flex: 1; }
+    .assoc-name { font-family: system-ui,sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .assoc-detail { font-size: 13px; opacity: 0.52; line-height: 1.55; }
+
+    /* ── Questions ── */
+    .questions { display: grid; gap: 10px; margin-bottom: 28px; }
+    .question {
+      padding: 14px 18px; background: rgba(255,255,255,0.022);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 14px; opacity: 0.74; line-height: 1.60;
+    }
+    .question::before { content: "? "; color: var(--accent); font-weight: 900; }
+
+    /* ── CTA ── */
+    .cta-bar {
+      background: rgba(255,255,255,0.028); border: 1px solid var(--border);
+      border-radius: 18px; padding: 32px 28px; text-align: center; margin-top: 52px;
+    }
+    .cta-bar h3 { font-family: system-ui,sans-serif; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+    .cta-bar p { font-size: 14px; opacity: 0.52; margin-bottom: 22px; }
+    .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 12px;
+      font-family: system-ui,sans-serif; font-size: 14px; font-weight: 800;
+      cursor: pointer; transition: transform 0.12s, opacity 0.12s;
+      text-decoration: none; border: none; color: #fff;
+    }
+    .btn-kofi { background: #ff5e3a; box-shadow: 0 4px 18px rgba(255,94,58,0.30); }
+    .btn-kofi:hover  { opacity: 0.88; transform: translateY(-1px); }
+    .btn-game { background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.28); color: var(--gold); }
+    .btn-game:hover  { background: rgba(245,158,11,0.24); transform: translateY(-1px); }
+
+    footer {
+      text-align: center; padding: 22px;
+      font-family: system-ui,sans-serif; font-size: 12px; opacity: 0.22;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav>
+    <a class="nav-brand" href="index.html">FIND EPSTEIN</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="investigation.html">Investigation</a>
+      <a href="index.html">Play</a>
+      <a href="https://ko-fi.com/findepstein" target="_blank" rel="noopener">Donate</a>
+    </div>
+  </nav>
+
+  <div class="hero-bar">
+    <p class="eyebrow">Independent Research · Public Record</p>
+    <h1>The <span>Epstein</span> Investigation</h1>
+    <p class="sub">A factual summary of the Jeffrey Epstein case — key events, named associates, and the questions that remain unanswered. All information sourced from public court records and published journalism.</p>
+  </div>
+
+  <div class="content">
+
+    <h2>Overview</h2>
+    <p>Jeffrey Epstein was an American financier and convicted sex offender who cultivated a network of powerful connections across finance, politics, royalty, and academia over several decades. He was arrested in July 2019 on federal charges of sex trafficking of minors in Florida and New York.</p>
+    <p>Epstein was found dead in his Manhattan detention cell on 10 August 2019. The New York City medical examiner ruled his death a suicide by hanging. His death triggered significant public scepticism given the high-profile nature of the case, the failure of suicide watch protocols, and the implications for his powerful associates.</p>
+    <div class="callout">
+      <p>"The Epstein case represents one of the most significant — and most scrutinised — criminal proceedings in recent American history, raising fundamental questions about power, accountability, and the operation of justice."</p>
+    </div>
+
+    <h2>Key Timeline</h2>
+    <ul class="timeline">
+      <li><span class="tl-year">1953</span><span class="tl-text">Jeffrey Epstein born in Brooklyn, New York.</span></li>
+      <li><span class="tl-year">1976</span><span class="tl-text">Begins teaching at the Dalton School, New York, without a college degree. Uses the position to build connections with wealthy families.</span></li>
+      <li><span class="tl-year">1976–1981</span><span class="tl-text">Works at Bear Stearns investment bank, rising to limited partner before leaving under unclear circumstances.</span></li>
+      <li><span class="tl-year">1980s–90s</span><span class="tl-text">Establishes J. Epstein &amp; Co., managing money for a small number of ultra-high-net-worth clients. The sources of his wealth and client list remain disputed.</span></li>
+      <li><span class="tl-year">2005</span><span class="tl-text">Palm Beach Police begin investigating Epstein following complaints from parents of teenage girls. The investigation ultimately identifies over 30 potential victims.</span></li>
+      <li><span class="tl-year">2007</span><span class="tl-text">A highly controversial non-prosecution agreement (NPA) is brokered by then US Attorney Alex Acosta. Epstein pleads guilty to two Florida state charges and serves only 13 months, spending much of his sentence on work release.</span></li>
+      <li><span class="tl-year">2010</span><span class="tl-text">Released from custody. Continues travelling internationally and hosting high-profile guests at his properties.</span></li>
+      <li><span class="tl-year">2018</span><span class="tl-text">The Miami Herald publishes its landmark "Perversion of Justice" investigative series, reigniting national scrutiny of the NPA and Epstein's network.</span></li>
+      <li><span class="tl-year">Jul 2019</span><span class="tl-text">Arrested at Teterboro Airport on new federal charges of sex trafficking. A federal judge denies bail. He is placed at the Metropolitan Correctional Center, New York.</span></li>
+      <li><span class="tl-year">Aug 2019</span><span class="tl-text">Found dead in his cell on 10 August. Ruled suicide. Questions arise around the removal of his suicide watch, failure of guard protocols, and malfunctioning surveillance cameras.</span></li>
+      <li><span class="tl-year">2020</span><span class="tl-text">Ghislaine Maxwell, Epstein's long-term associate and alleged recruiter, is arrested on charges of sex trafficking and conspiracy.</span></li>
+      <li><span class="tl-year">2021</span><span class="tl-text">Maxwell is convicted on five of six counts. Sentenced to 20 years in federal prison. Refuses to name additional co-conspirators publicly.</span></li>
+      <li><span class="tl-year">2024</span><span class="tl-text">Court documents unsealed naming over 150 individuals referenced in depositions and filings associated with the Epstein civil cases.</span></li>
+    </ul>
+
+    <h2>Named Associates</h2>
+    <p>The following individuals have been publicly named in court documents, flight logs, depositions, or published investigative journalism. Inclusion does not imply criminal wrongdoing unless explicitly stated.</p>
+    <div class="associates-grid">
+      <div class="associate">
+        <span class="assoc-role role-convicted">Convicted</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Ghislaine Maxwell</div>
+          <div class="assoc-detail">British socialite, daughter of media mogul Robert Maxwell. Epstein's closest associate for decades. Convicted in 2021 on five counts including sex trafficking of minors. Currently serving a 20-year federal prison sentence.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Prince Andrew, Duke of York</div>
+          <div class="assoc-detail">Named in court documents and by accuser Virginia Giuffre. Photographed with Epstein and Maxwell on multiple occasions. Settled a civil lawsuit brought by Giuffre in 2022 for an undisclosed sum. Stepped back from royal duties. Has denied all allegations.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Bill Clinton — 42nd US President</div>
+          <div class="assoc-detail">Flight logs show multiple trips on Epstein's private jet, including to his private island. Acknowledged knowing Epstein. Has denied any knowledge of his crimes.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Donald Trump — 45th &amp; 47th US President</div>
+          <div class="assoc-detail">Named in unsealed documents. Previously described Epstein as a "terrific guy" who "likes beautiful women as much as I do." Has denied any involvement in criminal activity.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Alan Dershowitz — Harvard Law Professor</div>
+          <div class="assoc-detail">Part of Epstein's legal defence team during the 2007 NPA negotiations. Named by Virginia Giuffre in court documents. Filed defamation suits. Has denied all allegations of wrongdoing.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Jean-Luc Brunel — French Modelling Agent</div>
+          <div class="assoc-detail">Named by multiple Epstein accusers as involved in procuring young women. Found dead in his cell at La Santé Prison, Paris in February 2022 while awaiting trial on rape and sexual assault charges.</div>
+        </div>
+      </div>
+      <div class="associate">
+        <span class="assoc-role role-named">Named</span>
+        <div class="assoc-body">
+          <div class="assoc-name">Les Wexner — Billionaire Retail Mogul</div>
+          <div class="assoc-detail">Founder of L Brands (Victoria's Secret). The primary known client of Epstein's money management firm. Gave Epstein broad financial powers of attorney and gifted him a Manhattan townhouse. Severed ties in 2007.</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Unanswered Questions</h2>
+    <p>Despite extensive court proceedings, the following fundamental questions remain publicly unresolved:</p>
+    <div class="questions">
+      <div class="question">Who funded Epstein's operation and how did a man with no verifiable client base amass a fortune estimated at over $577 million?</div>
+      <div class="question">Why did the 2007 non-prosecution agreement grant immunity to unnamed "co-conspirators," and who are they?</div>
+      <div class="question">What happened to the surveillance footage from outside Epstein's cell on the night of his death?</div>
+      <div class="question">How many of the 150+ individuals named in flight logs and court depositions will face criminal investigation?</div>
+      <div class="question">What is the full extent of any intelligence agency awareness of or involvement with Epstein's network?</div>
+      <div class="question">Where is the documentation, recorded material, and alleged blackmail files reportedly held at Epstein's properties in New York, Florida, and the Virgin Islands?</div>
+      <div class="question">Why did Maxwell refuse to name additional co-conspirators, and what plea arrangements — if any — were offered?</div>
+    </div>
+
+    <div class="cta-bar">
+      <h3>Support the Investigation</h3>
+      <p>FindEpstein.com is independent and self-funded. Your support keeps the research alive.</p>
+      <div class="btn-row">
+        <a class="btn btn-kofi" href="https://ko-fi.com/findepstein" target="_blank" rel="noopener noreferrer">☕ Donate £5 on Ko-fi</a>
+        <a class="btn btn-game" href="index.html">🕵️ Play the Game</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  findepstein.com · Independent research project · All facts sourced from public court records and published journalism · No affiliation with any government body
+</footer>
+</body>
+</html>
