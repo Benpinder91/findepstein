@@ -527,10 +527,7 @@
         "#...............................#",
         "#################################"
       ],
-      onCompleteModal:{
-        title:"Evidence Secured",
-        text:"You crossed the room without waking him.\n\nThe investigation continues.\nThe truth cannot be silenced."
-      }}
+    }
   ];
 
   // ── Map connectivity helpers ─────────────────────────────────
@@ -1060,13 +1057,7 @@
   }
   function checkExit() {
     if (player.tx===exitTile.tx && player.ty===exitTile.ty) {
-      const lvl = LEVELS[levelIndex];
-      if (lvl.onCompleteModal) {
-        const bon = lvlBonus(lvl.id);
-        addScore(bon);
-        saveHS(score);
-        showModal(lvl.onCompleteModal.title, lvl.onCompleteModal.text, "Restart Game", bon);
-      } else nextLevel();
+      nextLevel(); // always go through nextLevel — last level triggers victory screen
     }
   }
   function resetPositionsOnly() {
