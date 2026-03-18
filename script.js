@@ -189,6 +189,7 @@
   let massageGroups = 0;     // completed groups (each adds 1s to pause)
   let massageTimer  = 0;     // countdown for current pause
   let massagePaused = false; // is movement currently locked?
+  let massageAwake  = false; // true once the Financier has woken and is chasing
   function addCombo() {
     combo = Math.min(combo + 1, MAX_COMBO);
     comboTimer = COMBO_TIMEOUT;
@@ -700,11 +701,21 @@
 
     // Massage room: block movement during required pause
     if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom) {
-      if (massagePaused) {
-        statusEl.textContent = "You moved too fast — he's awake!";
+      if (massagePaused && !massageAwake) {
+        // Wake the Financier — he gets off the table and hunts the player
+        massageAwake  = true;
+        massagePaused = false;
+        massageTimer  = 0;
         beep(120, 0.18, "sawtooth", 0.07);
-        handlePlayerCaught("The Financier (awakened!)");
-        return;
+        // Spawn Financier as a fast hunter at the table (centre of map)
+        const spawnTile = { tx: Math.floor(mapW / 2), ty: Math.floor(mapH / 2) };
+        const fin = makeEnemy(
+          { ...ENEMY_TEMPLATES.financier, speed: ENEMY_TEMPLATES.financier.speed * 1.3, behavior: "hunter" },
+          spawnTile, listWalkableTiles()
+        );
+        enemies.push(fin);
+        enemyListEl.textContent = enemies.map(e => e.name).join(" · ");
+        // Fall through — let the step happen so the player can run
       }
     }
 
@@ -720,7 +731,7 @@
     beep(620, 0.02, "square", 0.02);
 
     // Massage room: count steps; every 4 steps require a pause
-    if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom) {
+    if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom && !massageAwake) {
       massageSteps++;
       if (massageSteps >= 4) {
         massageSteps = 0;
@@ -729,7 +740,7 @@
         massageTimer  = pauseLen;
         massagePaused = true;
         beep(300, 0.07, "sine", 0.04);
-        statusEl.textContent = `Hold still for ${pauseLen} second${pauseLen > 1 ? 's' : ''}…`;
+        // No hint text — player must figure out the mechanic themselves
       }
     }
   }
@@ -901,7 +912,7 @@
     buildWallCache();
 
     // Reset massage room state on every level load
-    massageSteps = 0; massageGroups = 0; massageTimer = 0; massagePaused = false;
+    massageSteps = 0; massageGroups = 0; massageTimer = 0; massagePaused = false; massageAwake = false;
 
     levelNameEl.textContent = level.name;
     enemyListEl.textContent = enemies.map(e=>e.name).join(" · ");
@@ -1266,78 +1277,44 @@
     ctx.fillStyle = "rgba(235,235,235,0.90)";
     ctx.beginPath(); roundRect(ctx, cx - T*2.8, cy - T*0.29, T*5.6, T*0.58, 3); ctx.fill();
 
-    // ── Sleeping figure ──────────────────────────
-    // Body (overweight, lying flat)
-    ctx.fillStyle = "#fde68a";
-    ctx.beginPath(); ctx.ellipse(cx - T*0.2, cy, T*2.0, T*0.30, 0, 0, Math.PI*2); ctx.fill();
+    // ── Sleeping figure (hidden once awake — he becomes an active enemy) ──
+    if (!massageAwake) {
+      // Body (overweight, lying flat)
+      ctx.fillStyle = "#fde68a";
+      ctx.beginPath(); ctx.ellipse(cx - T*0.2, cy, T*2.0, T*0.30, 0, 0, Math.PI*2); ctx.fill();
 
-    // Towel
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.beginPath(); roundRect(ctx, cx - T*1.6, cy - T*0.26, T*2.1, T*0.52, 2); ctx.fill();
+      // Towel
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.beginPath(); roundRect(ctx, cx - T*1.6, cy - T*0.26, T*2.1, T*0.52, 2); ctx.fill();
 
-    // Head
-    ctx.fillStyle = "#fde68a";
-    ctx.beginPath(); ctx.ellipse(cx + T*2.0, cy, T*0.42, T*0.35, 0, 0, Math.PI*2); ctx.fill();
-    // Bald highlight
-    ctx.fillStyle = "rgba(255,255,255,0.28)";
-    ctx.beginPath(); ctx.arc(cx + T*2.0, cy - T*0.12, T*0.12, 0, Math.PI*2); ctx.fill();
-    // Closed eye
-    ctx.strokeStyle = "#a07850"; ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.arc(cx + T*2.1, cy - T*0.03, T*0.09, Math.PI, 0); ctx.stroke();
-
-    // ZZZs (animated float-up)
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    const sizes = [T*0.52, T*0.66, T*0.80];
-    const offsets = [[T*0.6, -T*0.7], [T*1.0, -T*1.15], [T*1.5, -T*1.65]];
-    sizes.forEach((sz, i) => {
-      const phase  = ((gameTick * 0.45 + i * 0.35) % 1.0);
-      const alpha  = Math.max(0, Math.min(1, phase < 0.7 ? phase / 0.3 : (1 - phase) / 0.3));
-      const floatY = offsets[i][1] - phase * T * 0.4;
-      ctx.globalAlpha = alpha * 0.80;
-      ctx.fillStyle = "rgba(180,180,255,1)";
-      ctx.font = `bold ${Math.floor(sz)}px sans-serif`;
-      ctx.fillText("z", cx + T*2.0 + offsets[i][0], cy + floatY);
-    });
-    ctx.globalAlpha = 1;
-
-    // ── Step progress HUD (bottom-centre) ────────
-    if (!massagePaused) {
-      const bx = VW / 2 - T * 2.5, by = VH - T * 2.8;
-      ctx.fillStyle = "rgba(0,0,0,0.65)";
-      roundRect(ctx, bx - 10, by - 8, T * 5 + 20, T * 1.2, 8); ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,0.70)";
-      ctx.font = `bold ${Math.floor(T * 0.52)}px system-ui`;
-      ctx.textAlign = "center";
-      ctx.fillText(`Steps: ${massageSteps} / 4`, VW / 2, by + T * 0.26);
-      // green bar
-      ctx.fillStyle = "rgba(255,255,255,0.10)";
-      roundRect(ctx, bx, by + T * 0.54, T * 5, T * 0.27, 3); ctx.fill();
-      if (massageSteps > 0) {
-        ctx.fillStyle = "#22c55e";
-        roundRect(ctx, bx, by + T * 0.54, (massageSteps / 4) * T * 5, T * 0.27, 3); ctx.fill();
-      }
+      // Head
+      ctx.fillStyle = "#fde68a";
+      ctx.beginPath(); ctx.ellipse(cx + T*2.0, cy, T*0.42, T*0.35, 0, 0, Math.PI*2); ctx.fill();
+      // Bald highlight
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.beginPath(); ctx.arc(cx + T*2.0, cy - T*0.12, T*0.12, 0, Math.PI*2); ctx.fill();
+      // Closed eye
+      ctx.strokeStyle = "#a07850"; ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.arc(cx + T*2.1, cy - T*0.03, T*0.09, Math.PI, 0); ctx.stroke();
     }
 
-    // ── HOLD STILL overlay ───────────────────────
-    if (massagePaused) {
-      ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(0, 0, VW, VH);
-      const secs = Math.ceil(massageTimer);
+    // ZZZs (animated float-up) — only while sleeping
+    if (!massageAwake) {
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fbbf24";
-      ctx.font = `900 ${Math.floor(T * 2.1)}px system-ui, sans-serif`;
-      ctx.fillText("HOLD STILL", VW / 2, VH / 2 - T * 1.6);
-      ctx.fillStyle = "#fff";
-      ctx.font = `900 ${Math.floor(T * 3.8)}px monospace`;
-      ctx.fillText(secs, VW / 2, VH / 2 + T * 0.5);
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
-      ctx.font = `${Math.floor(T * 0.68)}px system-ui`;
-      ctx.fillText(secs === 1 ? "second" : "seconds", VW / 2, VH / 2 + T * 2.1);
-      ctx.fillStyle = "rgba(255,80,80,0.80)";
-      ctx.font = `bold ${Math.floor(T * 0.58)}px system-ui`;
-      ctx.fillText("Moving now will wake him!", VW / 2, VH / 2 + T * 3.0);
+      const sizes = [T*0.52, T*0.66, T*0.80];
+      const offsets = [[T*0.6, -T*0.7], [T*1.0, -T*1.15], [T*1.5, -T*1.65]];
+      sizes.forEach((sz, i) => {
+        const phase  = ((gameTick * 0.45 + i * 0.35) % 1.0);
+        const alpha  = Math.max(0, Math.min(1, phase < 0.7 ? phase / 0.3 : (1 - phase) / 0.3));
+        const floatY = offsets[i][1] - phase * T * 0.4;
+        ctx.globalAlpha = alpha * 0.80;
+        ctx.fillStyle = "rgba(180,180,255,1)";
+        ctx.font = `bold ${Math.floor(sz)}px sans-serif`;
+        ctx.fillText("z", cx + T*2.0 + offsets[i][0], cy + floatY);
+      });
+      ctx.globalAlpha = 1;
     }
+    // No step HUD, no HOLD STILL overlay, no hints — player figures it out
   }
 
   // ── Draw evidence ────────────────────────────────────────────
@@ -1853,12 +1830,12 @@
       }
 
       // Massage room: count down the required pause
-      if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom && massagePaused) {
+      if (LEVELS[levelIndex] && LEVELS[levelIndex].massageRoom && massagePaused && !massageAwake) {
         massageTimer -= dt;
         if (massageTimer <= 0) {
           massagePaused = false;
           massageTimer  = 0;
-          statusEl.textContent = `Good. Move ${4 - massageSteps} more step${(4 - massageSteps) !== 1 ? 's' : ''}, then hold still again.`;
+          // No hint text
         }
       }
 
