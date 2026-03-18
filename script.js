@@ -1026,42 +1026,50 @@
     setTimeout(() => victoryTagInput.focus(), 80);
   }
 
-  function showLeaderboardOverlay(lb) {
+  // shareData is captured at submit time and passed in — never re-read from DOM
+  function showLeaderboardOverlay(lb, shareData) {
     const medals = ["🥇","🥈","🥉"];
-    if (!lb.length) {
+    if (!lb || !lb.length) {
       lbTable.innerHTML = `<tr><td class="lb-empty" colspan="4">No scores yet — be the first!</td></tr>`;
     } else {
       lbTable.innerHTML = lb.map((e, i) => `
         <tr class="${i < 3 ? "lb-top" : ""}">
           <td class="lb-rank">${medals[i] || (i+1) + "."}</td>
-          <td class="lb-name">${e.name}</td>
-          <td class="lb-pts">${Number(e.score).toLocaleString()}</td>
+          <td class="lb-name">${e.name || "---"}</td>
+          <td class="lb-pts">${Number(e.score || 0).toLocaleString()}</td>
           <td class="lb-date">${e.date || ""}</td>
         </tr>`).join("");
     }
-    // Build and populate share section
-    const tag      = (victoryTagInput.value.trim() || "AAA").toUpperCase();
-    const rank     = getPlayerRank(score);
-    const caption  = buildShareCaption(tag, score, totalEvidenceFound, rank.label);
-    const encoded  = encodeURIComponent(caption);
-    const rankBadge = document.getElementById("lbRankBadge");
+
+    // Populate rank + evidence from passed share data
+    const rankBadge    = document.getElementById("lbRankBadge");
     const evidenceStat = document.getElementById("lbEvidenceStat");
     const shareCapEl   = document.getElementById("shareCaption");
     const shareXBtn    = document.getElementById("shareX");
     const shareWaBtn   = document.getElementById("shareWa");
-    if (rankBadge)    rankBadge.textContent   = rank.label;
-    if (evidenceStat) evidenceStat.textContent = `${totalEvidenceFound} pieces of evidence uncovered`;
-    if (shareCapEl)   shareCapEl.textContent   = caption;
-    if (shareXBtn)    shareXBtn.href = `https://twitter.com/intent/tweet?text=${encoded}`;
-    if (shareWaBtn)   shareWaBtn.href = `https://wa.me/?text=${encoded}`;
+    const shareFbBtn   = document.getElementById("shareFb");
+
+    if (shareData) {
+      const encoded = encodeURIComponent(shareData.caption);
+      if (rankBadge)    rankBadge.textContent    = shareData.rankLabel;
+      if (evidenceStat) evidenceStat.textContent  = `${shareData.evidence} pieces of evidence uncovered`;
+      if (shareCapEl)   shareCapEl.textContent    = shareData.caption;
+      if (shareXBtn)    shareXBtn.href  = `https://twitter.com/intent/tweet?text=${encoded}`;
+      if (shareWaBtn)   shareWaBtn.href = `https://wa.me/?text=${encoded}`;
+      if (shareFbBtn)   shareFbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ffindepstein.com&quote=${encoded}`;
+    }
+
     lbOverlay.classList.remove("hidden");
   }
 
   victorySubmitBtn.addEventListener("click", () => {
-    const tag = victoryTagInput.value.trim() || "AAA";
+    const tag      = (victoryTagInput.value.trim() || "AAA").slice(0, 3).toUpperCase();
+    const rank     = getPlayerRank(score);
+    const caption  = buildShareCaption(tag, score, totalEvidenceFound, rank.label);
+    const shareData = { tag, rankLabel: rank.label, evidence: totalEvidenceFound, caption };
     leaderboardData = saveToLeaderboard(tag, score);
     victoryOverlay.classList.add("hidden");
-    showLeaderboardOverlay(leaderboardData);
+    showLeaderboardOverlay(leaderboardData, shareData);
   });
 
   victoryTagInput.addEventListener("keydown", e => {

@@ -896,6 +896,11 @@ kbd {
   color: #fff;
   border-color: transparent;
 }
+.share-fb {
+  background: #1877f2;
+  color: #fff;
+  border-color: transparent;
+}
 .share-copy {
   background: rgba(255,255,255,0.08);
   color: var(--text);
