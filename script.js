@@ -1056,7 +1056,34 @@
       if (shareCapEl)   shareCapEl.textContent    = shareData.caption;
       if (shareXBtn)    shareXBtn.href  = `https://twitter.com/intent/tweet?text=${encoded}`;
       if (shareWaBtn)   shareWaBtn.href = `https://wa.me/?text=${encoded}`;
-      if (shareFbBtn)   shareFbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ffindepstein.com&quote=${encoded}`;
+      // Facebook can't receive custom text — copy caption first then open sharer
+      if (shareFbBtn) {
+        shareFbBtn.removeAttribute("href");
+        shareFbBtn.onclick = (ev) => {
+          ev.preventDefault();
+          const copyText = shareData.caption;
+          const openFb = () => window.open("https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ffindepstein.com", "_blank", "noopener");
+          navigator.clipboard.writeText(copyText).then(() => {
+            shareFbBtn.textContent = "📋 Caption copied — paste into post!";
+            setTimeout(() => {
+              shareFbBtn.textContent = "📘 Facebook";
+              openFb();
+            }, 900);
+          }).catch(() => {
+            // Fallback: copy via textarea then open
+            const ta = document.createElement("textarea");
+            ta.value = copyText;
+            document.body.appendChild(ta); ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            shareFbBtn.textContent = "📋 Caption copied — paste into post!";
+            setTimeout(() => {
+              shareFbBtn.textContent = "📘 Facebook";
+              openFb();
+            }, 900);
+          });
+        };
+      }
     }
 
     lbOverlay.classList.remove("hidden");
@@ -1182,6 +1209,8 @@
     if (keysDown.has("arrowright")||keysDown.has("d")) return { x:1, y:0  };
     return { x:0, y:0 };
   }
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
   window.addEventListener("keydown", e => {
     const k = e.key.toLowerCase();
     if (["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"].includes(k)) {
