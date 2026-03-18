@@ -954,9 +954,7 @@
     if (levelIndex >= LEVELS.length) {
       saveHS(score);
       modal.classList.add("hidden"); state = "game_over";
-      const playerName = prompt("🏆 Investigation complete!\n\nEnter your name for the leaderboard:", "") || "";
-      leaderboardData   = saveToLeaderboard(playerName, score);
-      leaderboardActive = true;
+      showVictoryOverlay();
       return;
     }
     showModal(
@@ -976,49 +974,70 @@
   }
   function saveToLeaderboard(name, pts) {
     const lb = getLeaderboard();
-    lb.push({ name: (name || "ANON").slice(0, 12).toUpperCase(), score: pts,
-               date: new Date().toLocaleDateString("en-GB") });
+    const tag = (name || "AAA").replace(/[^A-Za-z0-9]/g, "").slice(0, 3).toUpperCase() || "AAA";
+    lb.push({ name: tag, score: pts, date: new Date().toLocaleDateString("en-GB") });
     lb.sort((a, b) => b.score - a.score);
     const trimmed = lb.slice(0, 10);
     localStorage.setItem(LB_KEY, JSON.stringify(trimmed));
     return trimmed;
   }
-  function renderLeaderboard(lb) {
-    const VW = canvas.clientWidth, VH = canvas.clientHeight;
-    const cw = Math.min(360, VW - 32), ch = Math.min(460, VH * 0.88);
-    const cx = VW / 2, cy = VH / 2;
+  // ── Victory & Leaderboard HTML overlays ─────────────────────
+  const victoryOverlay   = document.getElementById("victoryOverlay");
+  const victoryScoreEl   = document.getElementById("victoryScore");
+  const victoryHsEl      = document.getElementById("victoryHs");
+  const victoryTagInput  = document.getElementById("victoryTagInput");
+  const victorySubmitBtn = document.getElementById("victorySubmitBtn");
+  const lbOverlay        = document.getElementById("lbOverlay");
+  const lbTable          = document.getElementById("lbTable");
+  const lbRestartBtn     = document.getElementById("lbRestartBtn");
 
-    ctx.fillStyle = "rgba(0,0,0,0.84)"; ctx.fillRect(0, 0, VW, VH);
-    ctx.fillStyle = "rgba(10,8,16,0.98)";
-    roundRect(ctx, cx-cw/2, cy-ch/2, cw, ch, 18); ctx.fill();
-    ctx.strokeStyle = "rgba(245,158,11,0.40)"; ctx.lineWidth = 1.5;
-    roundRect(ctx, cx-cw/2, cy-ch/2, cw, ch, 18); ctx.stroke();
-
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = "#f59e0b";
-    ctx.font = `bold 20px system-ui, sans-serif`;
-    ctx.fillText("🏆  TOP INVESTIGATORS", cx, cy - ch/2 + 28);
-
-    const entries = lb.slice(0, 10);
-    const rowH = Math.min(32, (ch - 110) / 10);
-    const medals = ["🥇","🥈","🥉"];
-    entries.forEach((entry, i) => {
-      const ry = cy - ch/2 + 68 + i * rowH;
-      ctx.fillStyle = i < 3 ? ["#f59e0b","#9ca3af","#b45309"][i] : "rgba(255,255,255,0.52)";
-      ctx.font = `${i < 3 ? "bold " : ""}${Math.floor(rowH * 0.50)}px monospace`;
-      ctx.textAlign = "left";
-      ctx.fillText(`${medals[i] || (i+1)+"."} ${entry.name}`, cx - cw/2 + 18, ry);
-      ctx.textAlign = "right";
-      ctx.fillText(Number(entry.score).toLocaleString(), cx + cw/2 - 18, ry);
-    });
-    if (!entries.length) {
-      ctx.fillStyle = "rgba(255,255,255,0.30)"; ctx.textAlign = "center";
-      ctx.font = "14px system-ui"; ctx.fillText("No scores yet!", cx, cy);
-    }
-    ctx.fillStyle = "rgba(255,255,255,0.30)"; ctx.textAlign = "center";
-    ctx.font = "12px system-ui";
-    ctx.fillText("Press  Restart Game  to play again", cx, cy + ch/2 - 18);
+  function showVictoryOverlay() {
+    victoryScoreEl.textContent = score.toLocaleString();
+    victoryHsEl.textContent    = getHS().toLocaleString();
+    victoryTagInput.value      = "";
+    victoryOverlay.classList.remove("hidden");
+    // Force uppercase as the user types
+    victoryTagInput.addEventListener("input", () => {
+      const pos = victoryTagInput.selectionStart;
+      victoryTagInput.value = victoryTagInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      victoryTagInput.setSelectionRange(pos, pos);
+    }, { once: false });
+    setTimeout(() => victoryTagInput.focus(), 80);
   }
+
+  function showLeaderboardOverlay(lb) {
+    const medals = ["🥇","🥈","🥉"];
+    if (!lb.length) {
+      lbTable.innerHTML = `<tr><td class="lb-empty" colspan="4">No scores yet — be the first!</td></tr>`;
+    } else {
+      lbTable.innerHTML = lb.map((e, i) => `
+        <tr class="${i < 3 ? "lb-top" : ""}">
+          <td class="lb-rank">${medals[i] || (i+1) + "."}</td>
+          <td class="lb-name">${e.name}</td>
+          <td class="lb-pts">${Number(e.score).toLocaleString()}</td>
+          <td class="lb-date">${e.date || ""}</td>
+        </tr>`).join("");
+    }
+    lbOverlay.classList.remove("hidden");
+  }
+
+  victorySubmitBtn.addEventListener("click", () => {
+    const tag = victoryTagInput.value.trim() || "AAA";
+    leaderboardData = saveToLeaderboard(tag, score);
+    victoryOverlay.classList.add("hidden");
+    showLeaderboardOverlay(leaderboardData);
+  });
+
+  // Also submit on Enter key in the tag input
+  victoryTagInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") victorySubmitBtn.click();
+  });
+
+  lbRestartBtn.addEventListener("click", () => {
+    lbOverlay.classList.add("hidden");
+    leaderboardActive = false;
+    restartGame();
+  });
 
   // ── Pickups / collisions ─────────────────────────────────────
   function checkEvidencePickup() {
@@ -1171,6 +1190,9 @@
   }
   function restartGame() {
     leaderboardActive = false;
+    // Hide both end-game overlays if visible
+    victoryOverlay.classList.add("hidden");
+    lbOverlay.classList.add("hidden");
     hideModal(); levelIndex=0; score=0; lives=3; deathHandicap=0;
     scoreEl.textContent="0"; livesEl.textContent="3";
     parseLevel(LEVELS[0]); resetCombo();
@@ -1881,9 +1903,8 @@
     drawOverlay();
     drawPizzaHUD();
 
-    if (state === "game_over") {
-      if (leaderboardActive) renderLeaderboard(leaderboardData);
-      else drawGameOver();
+    if (state === "game_over" && !leaderboardActive) {
+      drawGameOver();
     }
 
     requestAnimationFrame(loop);

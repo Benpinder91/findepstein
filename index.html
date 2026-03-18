@@ -117,6 +117,47 @@
     </div>
   </div>
 
+  <!-- ═══════════════ VICTORY OVERLAY ═══════════════ -->
+  <div class="eo-overlay hidden" id="victoryOverlay">
+    <div class="eo-card">
+      <div class="eo-badge">🏆</div>
+      <h2 class="eo-title">Investigation Complete!</h2>
+      <p class="eo-subtitle">The truth is out there.</p>
+      <div class="eo-scores">
+        <div class="eo-score-item"><span class="eo-score-label">SCORE</span><strong class="eo-score-val" id="victoryScore">0</strong></div>
+        <div class="eo-score-sep"></div>
+        <div class="eo-score-item"><span class="eo-score-label">BEST</span><strong class="eo-score-val eo-score-best" id="victoryHs">0</strong></div>
+      </div>
+      <div class="eo-tag-wrap">
+        <label class="eo-tag-label" for="victoryTagInput">Enter your 3-letter tag</label>
+        <input class="eo-tag-input" id="victoryTagInput" type="text" maxlength="3"
+               placeholder="AAA" autocomplete="off" spellcheck="false" inputmode="text" />
+      </div>
+      <div class="eo-btns">
+        <button class="btn primary eo-submit" id="victorySubmitBtn" type="button">
+          🏆 Submit &amp; See Leaderboard
+        </button>
+        <a class="btn eo-kofi" href="https://ko-fi.com/findepstein" target="_blank" rel="noopener noreferrer">
+          ☕ Support the Investigation
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ LEADERBOARD OVERLAY ═══════════════ -->
+  <div class="eo-overlay hidden" id="lbOverlay">
+    <div class="eo-card eo-card-lb">
+      <h2 class="eo-title">🏆 Top Investigators</h2>
+      <table class="lb-table" id="lbTable" aria-label="Leaderboard"></table>
+      <div class="eo-btns eo-btns-lb">
+        <button class="btn primary" id="lbRestartBtn" type="button">▶ Play Again</button>
+        <a class="btn eo-kofi" href="https://ko-fi.com/findepstein" target="_blank" rel="noopener noreferrer">
+          ☕ Support the Investigation
+        </a>
+      </div>
+    </div>
+  </div>
+
 </div>
 <script src="script.js"></script>
 </body>
